@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>山陰山陽・自駕秋旅</title>
+    
+    <!-- Core Libraries (React, ReactDOM, Babel) -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts (Shippori Mincho for Wafu vibe) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;600;800&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #fcfaf2; /* Washi Color */
+        }
+        .font-serif {
+            font-family: 'Shippori Mincho', serif;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #fcfaf2; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #dcd6cc; 
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #bc412b; 
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- Icon Components (Inline SVGs to avoid external deps issues) ---
+        const Icons = {
+            MapPin: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>,
+            Navigation: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>,
+            Calendar: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>,
+            CloudSun: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/><path d="M15.947 12.65a4 4 0 0 0-5.925-4.128"/><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z"/></svg>,
+            CloudRain: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 14v6"/><path d="M8 14v6"/><path d="M12 16v6"/></svg>,
+            Sun: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41-1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>,
+            Utensils: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>,
+            BedDouble: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M2 8h20"/><path d="M5 8v-1a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1"/><path d="M4 16v2"/><path d="M20 16v2"/><path d="M2 20h20"/><path d="M6 8h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2Z"/></svg>,
+            Camera: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>,
+            Car: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M2 12h20"/></svg>,
+            Info: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>,
+            BookOpen: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
+            Phone: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>,
+            Plane: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M2 12h5"/><path d="M13 12H2"/><path d="M10 20v-8"/><path d="m22 2-9 10"/><path d="m13 12-2.5 7.5"/><path d="M10 4v8"/><path d="m22 22-9-10"/></svg>,
+            Wallet: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>,
+            ChevronLeft: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m15 18-6-6 6-6"/></svg>,
+            ChevronRight: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m9 18 6-6-6-6"/></svg>,
+            Star: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+            Coffee: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" x2="6" y1="1" y2="4"/><line x1="10" x2="10" y1="1" y2="4"/><line x1="14" x2="14" y1="1" y2="4"/></svg>,
+            Clock: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+            FileText: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>,
+            Flower2: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 5a3 3 0 1 1 3 3m-3-3a3 3 0 1 0-3 3m3-3v1M9 8a3 3 0 1 0 3 3M9 8h1m5 0a3 3 0 1 1-3 3m3-3h-1m-2 3v-1"/></svg>,
+            ExternalLink: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>,
+        };
+
+        // --- Mock Data ---
+        const tripData = {
+            meta: {
+                title: "山陰山陽・自駕秋旅",
+                dateRange: "2025.11.28 - 2025.12.08",
+                flight: { out: "IT262", in: "IT263" }
+            },
+            days: [
+                {
+                    id: 1,
+                    date: "11/28 (五)",
+                    location: "岡山 ➔ 津山",
+                    mainCity: "津山", 
+                    spots: [
+                        { time: "16:30", name: "岡山機場", type: "transport", note: "抵達，辦理入境" },
+                        { 
+                            time: "17:30", 
+                            name: "機場租車", 
+                            type: "transport", 
+                            note: "取車出發", 
+                            tags: ["查看預約資訊"], 
+                            link: "https://maps.app.goo.gl/k3n36FBfJrASq4Rx9",
+                            customDetails: [
+                                { label: "預約號碼", value: "99992154300", highlight: true },
+                                { label: "車型等級", value: "SUV2 YARIS CROSS Hybrid", icon: <Icons.Car className="w-4 h-4" /> },
+                                { 
+                                    label: "出發店鋪", 
+                                    value: "岡山機場店 (TEL：086-294-2100)\n1565 Nichioji, Kita-ku, Okayama-shi, Okayama 701-1131\n岡山市北区日応寺1565",
+                                    isAddress: true
+                                },
+                                { 
+                                    label: "還車店鋪", 
+                                    value: "岡山站前店\n7-25 Hon-machi, Kita-ku, Okayama-shi, Okayama 700-0901\n岡山市北区本町7-25",
+                                    isAddress: true
+                                },
+                                { label: "出發時間", value: "11/28/2025 17:30", icon: <Icons.Clock className="w-4 h-4" /> },
+                                { label: "還車時間", value: "12/06/2025 16:00", icon: <Icons.Clock className="w-4 h-4" /> },
+                            ]
+                        },
+                        { 
+                            time: "18:30", 
+                            name: "THE SHIROYAMA TERRACE 津山別邸", 
+                            type: "hotel", 
+                            note: "Check-in。溫泉時間13:30-24:00；6:00-10:00" 
+                        },
+                        { 
+                            time: "19:30", 
+                            name: "津山晚餐", 
+                            type: "food", 
+                            tags: ["必吃美食", "點擊看推薦"], 
+                            note: "點擊查看三家推薦餐廳詳細資訊",
+                            hideNav: true, 
+                            subSpots: [
+                                { 
+                                    name: "Izakaya Osome お染", 
+                                    note: "步行8m / 居酒屋", 
+                                    type: "food",
+                                    link: "https://www.google.com/maps/search/?api=1&query=Izakaya+Osome+Tsuyama"
+                                },
+                                { 
+                                    name: "北海", 
+                                    note: "步行5m", 
+                                    type: "food",
+                                    link: "https://www.google.com/maps/search/?api=1&query=Hokkai+Tsuyama"
+                                },
+                                { 
+                                    name: "Bokkemon炙家 ぼっけもん", 
+                                    note: "步行6m", 
+                                    type: "food",
+                                    link: "https://www.google.com/maps/search/?api=1&query=Bokkemon+Tsuyama"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    id: 2,
+                    date: "11/29 (六)",
+                    location: "津山深度遊",
+                    mainCity: "津山",
+                    spots: [
+                        { time: "09:00", name: "津山城 (鶴山公園)", type: "sight", note: "日本百大名城" },
+                        { 
+                            time: "10:30", 
+                            name: "津山洋學資料館", 
+                            type: "sight",
+                            tags: ["冷知識"],
+                            customDetails: [
+                                {
+                                    label: "珈琲的語源",
+                                    icon: <Icons.BookOpen className="w-4 h-4" />,
+                                    value: "咖啡的荷蘭語是「koffie」，當時的日本人試圖用漢字表記這個外來語，如：可否、可非、架非、哥非乙、黑炒豆等，但都無法被廣泛接受。據聞是直到宇田川榕菴用象徵古代女性花簪的「珈」和貫珠的「琲」兩字，貼切又優雅地形容咖啡果實的模樣，而後成為日本人百年來稱呼這項西方黑茶的通稱。"
+                                },
+                                {
+                                    label: "參考文章",
+                                    value: "閱讀更多關於津山咖啡的故事",
+                                    linkUrl: "https://hatsumimi-mag.com/2025/02/26/tsuyama001/"
+                                }
+                            ]
+                        },
+                        { 
+                            time: "11:30", 
+                            name: "福壽湯 Cafe Fukujuyu", 
+                            type: "coffee", 
+                            tags: ["特色建築"],
+                            customDetails: [
+                                {
+                                    label: "錢湯變身",
+                                    icon: <Icons.Info className="w-4 h-4" />,
+                                    value: "這棟始於明治30年的錢湯建築，咖啡店內分為前後兩區。昔日錢湯負責收錢的「番台」，被廣戶先生以新潮的咖啡吧檯重新詮釋。吧檯側面貼滿的舊報紙，以及貼在門內的舊電影海報，都是他整理後方空間時所發現。以前的人會把報紙和海報放在榻榻米下作為除濕之用，意外留下這些珍貴的紙本。如果仔細尋找門上的海報，還能找到昭和40年的3碼電話。"
+                                },
+                                {
+                                    label: "特色菜單",
+                                    icon: <Icons.Coffee className="w-4 h-4" />,
+                                    value: "目前店內提供三款黑咖啡：深焙巴西豆的手沖、愛樂壓濃縮，以及端看店主人當下心情的「即興咖啡」（きまぐれ珈琲）。除此，還有多種花式咖啡、蘇打水與酒精飲料。紅豆和卡士達兩種口味的「鯉魚燒」（コイ焼き）則來自店主的創意。由於津山不靠海、只有河，於是店主把鯛魚燒換成鯉魚燒。"
+                                }
+                            ]
+                        },
+                        { 
+                            time: "12:30", 
+                            name: "日進月步", 
+                            type: "food", 
+                            tags: ["午餐"], 
+                            note: "蕎麥麵料理",
+                            link: "https://maps.app.goo.gl/UGV1S3HYVyxNh5Kp7"
+                        },
+                        { 
+                            time: "14:00", 
+                            name: "城西浪漫館 (中島病院舊本館)", 
+                            type: "sight",
+                            tags: ["建築巡禮"],
+                            customDetails: [
+                                {
+                                    label: "建築歷史",
+                                    icon: <Icons.Info className="w-4 h-4" />,
+                                    value: "這棟美麗的二層木造建築前身為中島醫院，建於1917年。站在入口就能清楚看見，正面中央突出的二樓陽臺、科林斯式柱和上方的圓頂屋頂，典型的歐式建築裝飾。這座建物出自生前在津山留下眾多傑出建築的大工匠池田豐太郎之手。1997年NHK晨間劇《阿久里》還曾在此取景，如今已是津山市的地標建築之一。"
+                                }
+                            ]
+                        },
+                        { 
+                            time: "15:30", 
+                            name: "So's Cafe", 
+                            type: "coffee", 
+                            link: "https://maps.app.goo.gl/BamJqcxEp4sLSXjT7",
+                            customDetails: [
+                                {
+                                    label: "江戶咖啡再現",
+                                    icon: <Icons.Coffee className="w-4 h-4" />,
+                                    value: "津山洋學資料館參考宇田川榕菴手繪稿重現的當時煮咖啡的器具（コーヒーカン，一種咖啡煮器，在荷蘭語中意指咖啡壺），這裡也有可實際使用的複製品。"
+                                },
+                                {
+                                    label: "嚴選豆種",
+                                    icon: <Icons.Info className="w-4 h-4" />,
+                                    value: "為了重現江戶時代的咖啡風味，店內特地選用和當時相同品種、十七世紀荷蘭人開始在印尼栽種的爪哇阿拉比卡豆。客人可選擇使用複刻當時的咖啡器具（2至5人份），或是手沖萃取。"
+                                }
+                            ]
+                        },
+                        { 
+                            time: "18:00", 
+                            name: "燒肉千惠", 
+                            type: "food", 
+                            tags: ["必吃美食"], 
+                            note: "享用津山著名的肉類料理",
+                            link: "https://maps.app.goo.gl/egUkAwXr6KZjpWkk7"
+                        },
+                        { time: "20:00", name: "THE SHIROYAMA TERRACE 津山別邸", type: "hotel", note: "續住一晚，享受溫泉" }
+                    ]
+                },
+                {
+                    id: 3,
+                    date: "11/30 (日)",
+                    location: "津山 ➔ 勝山 ➔ 安來",
+                    mainCity: "安來",
+                    spots: [
+                        {
+                            time: "08:30",
+                            name: "早餐",
+                            type: "food",
+                            note: "於飯店內享用早餐，隨後辦理退房"
+                        },
+                        { 
+                            time: "10:00", 
+                            name: "勝山町老街保存地區", 
+                            type: "sight", 
+                            note: "漫步暖簾之町",
+                            tags: ["詳細情報"],
+                            link: "https://maps.app.goo.gl/HQ1R57tqi9Es1fBg7",
+                            customDetails: [
+                                {
+                                    label: "駐車場ナビ",
+                                    value: "點此開啟停車場導航",
+                                    isAddress: false,
+                                    linkUrl: "https://maps.app.goo.gl/mzjtrKQP1Xyjk1au6",
+                                    icon: <Icons.Car className="w-4 h-4" />
+                                },
+                                {
+                                    label: "老街特色",
+                                    icon: <Icons.Info className="w-4 h-4" />,
+                                    value: "漫步のれん門簾之町老街、咖啡小店。這裡是日本第一個指定老街保存區，保留了濃厚的江戶風情。"
+                                },
+                                {
+                                    label: "推薦探訪",
+                                    icon: <Icons.Star className="w-4 h-4" />,
+                                    value: "ひのき草木染織工房 (Hinoki)",
+                                    linkUrl: "https://www.google.com/maps/search/?api=1&query=Hinoki+Grass+Dyeing+Weaving+Workshop+Katsuyama"
+                                }
+                            ]
+                        },
+                        { 
+                            time: "12:00", 
+                            name: "勝山町午餐", 
+                            type: "food", 
+                            note: "點擊查看推薦餐廳 (Romantei / 西藏)",
+                            tags: ["午餐推薦"],
+                            subSpots: [
+                                { 
+                                    name: "Romantei (ろまん亭)", 
+                                    note: "當地人氣洋食", 
+                                    type: "food",
+                                    link: "https://www.google.com/maps/search/?api=1&query=Romantei+Katsuyama"
+                                },
+                                { 
+                                    name: "西蔵 (Nishigura)", 
+                                    note: "酒造改建餐廳，氣氛極佳", 
+                                    type: "food",
+                                    link: "https://www.google.com/maps/search/?api=1&query=Nishigura+Restaurant+Katsuyama"
+                                }
+                            ]
+                        },
+                        { time: "14:00", name: "玉雲大權現宮", type: "sight" },
+                        { time: "15:00", name: "新庄宿", type: "sight", note: "建議走 R181 轉米子自動車道" },
+                        { 
+                            time: "17:00", 
+                            name: "さぎの湯荘 (安來)", 
+                            type: "hotel", 
+                            tags: ["重要預約"], 
+                            note: "Check-in 本館2F【朝霧】。一泊二食。" 
+                        }
+                    ]
+                },
+                {
+                    id: 4,
+                    date: "12/01 (一)",
+                    location: "足立美術館 ➔ 玉造溫泉",
+                    mainCity: "玉造",
+                    spots: [
+                        { time: "09:00", name: "足立美術館", type: "sight", tags: ["必去景點"], note: "連續多年日本第一庭園。含魯山人、近現代日本畫收藏。" },
+                        { time: "12:00", name: "川西屋", type: "food", note: "午餐" },
+                        { time: "13:30", name: "月山富田城遺跡", type: "sight", note: "百名城印章、御城印收集" },
+                        { 
+                            time: "15:30", 
+                            name: "星野集團 界 玉造", 
+                            type: "hotel", 
+                            tags: ["頂級住宿", "必看表演"],
+                            stories: ["晚上9:30有石見神樂表演《八岐大蛇》，是改編自出雲地區神話的酬神舞蹈。"]
+                        }
+                    ]
+                },
+                {
+                    id: 5,
+                    date: "12/02 (二)",
+                    location: "松江城 ➔ 出雲",
+                    mainCity: "松江",
+                    spots: [
+                        { 
+                            time: "08:30", 
+                            name: "松江城", 
+                            type: "sight", 
+                            tags: ["國寶"],
+                            stories: ["日本僅存的12座原始城堡之一，因屋頂像千鳥展翅，又名「千鳥城」。建議先逛城再搭船。"]
+                        },
+                        { time: "10:00", name: "堀川遊覽船", type: "sight", note: "暖桌船體驗 (需脫鞋)" },
+                        { time: "11:30", name: "八雲庵", type: "food", tags: ["必吃美食"], note: "鴨南蠻蕎麥麵 (週四休)" },
+                        { time: "13:00", name: "鹽見繩手 & 武家屋敷", type: "sight", note: "小泉八雲故居散策" },
+                        { 
+                            time: "15:00", 
+                            name: "鰐淵寺", 
+                            type: "sight", 
+                            stories: ["傳說智春上人祈願時法器掉落河中，被鱷魚(Wani)撿回，故名鰐淵寺。"]
+                        },
+                        { time: "17:00", name: "Centurion Hotel & Spa Classic Izumo", type: "hotel", note: "Check-in (不含早)" }
+                    ]
+                },
+                {
+                    id: 6,
+                    date: "12/03 (三)",
+                    location: "出雲大社 (神在祭)",
+                    mainCity: "出雲",
+                    spots: [
+                        { time: "09:00", name: "出雲大社", type: "sight", tags: ["重點行程"], note: "參拜禮儀：二禮、四拍手、一禮" },
+                        { 
+                            time: "11:00", 
+                            name: "稻佐之濱", 
+                            type: "sight", 
+                            tags: ["攻略"],
+                            stories: ["御砂祈願攻略：1. 先在稻佐之濱取砂。 2. 參拜出雲大社。 3. 將砂供奉於素鵞社。 4. 取回原本供奉的御砂帶回家作為守護。"]
+                        },
+                        { time: "12:30", name: "神門通", type: "sight", note: "逛街、吃善哉" },
+                        { time: "14:00", name: "日御碕神社", type: "sight", note: "紅白相間的美麗神社" },
+                        { time: "18:00", name: "晚餐：Yaoyorozu 或 荒木屋", type: "food", note: "出雲蕎麥麵名店" }
+                    ]
+                },
+                {
+                    id: 7,
+                    date: "12/04 (四)",
+                    location: "出雲 ➔ 吹屋故鄉村",
+                    mainCity: "高梁",
+                    spots: [
+                        { time: "09:00", name: "出發前往吹屋", type: "transport", note: "車程約 2h 40m，注意山路蜿蜒" },
+                        { time: "12:00", name: "Tsukushi", type: "food", note: "湯咖哩 (Soup Curry)" },
+                        { 
+                            time: "13:30", 
+                            name: "吹屋故鄉村", 
+                            type: "sight", 
+                            stories: ["以「紅瓦」建築群聞名的銅礦小鎮，彷彿時光靜止。"],
+                            note: "參觀：松榮館、舊吹屋小學校、郵局"
+                        },
+                        { time: "17:00", name: "高梁國際飯店", type: "hotel", note: "Check-in (含早餐)" }
+                    ]
+                },
+                {
+                    id: 8,
+                    date: "12/05 (五)",
+                    location: "備中松山城 ➔ 倉敷",
+                    mainCity: "倉敷",
+                    spots: [
+                        { time: "06:00", name: "備中松山城展望台", type: "sight", tags: ["絕景"], note: "早起看雲海日出！" },
+                        { time: "09:00", name: "備中松山城", type: "sight", note: "日本唯一仍保有天守閣的山城，有貓城主三十郎" },
+                        { time: "13:30", name: "倉敷美觀地區", type: "sight", note: "白壁宅邸與倉敷川" },
+                        { time: "15:00", name: "如竹堂 & 倉敷帆布", type: "shop", tags: ["必買伴手禮"], note: "紙膠帶天堂" },
+                        { time: "17:00", name: "滔々 民藝館南 (Toutou)", type: "hotel", tags: ["特色住宿"], note: "改建自古民家，體驗極佳" }
+                    ]
+                },
+                {
+                    id: 9,
+                    date: "12/06 (六)",
+                    location: "倉敷 ➔ 岡山",
+                    mainCity: "岡山",
+                    spots: [
+                        { time: "10:00", name: "岡山城", type: "sight", note: "烏城。歷史偵探解謎活動。" },
+                        { time: "13:00", name: "岡山後樂園", type: "sight", note: "日本三大名園之一" },
+                        { time: "18:00", name: "西川綠道公園", type: "sight", note: "冬季燈飾活動" },
+                        { time: "20:00", name: "三井花園飯店岡山", type: "hotel", note: "Check-in (含早)" }
+                    ]
+                },
+                {
+                    id: 10,
+                    date: "12/07 (日)",
+                    location: "岡山市區 ➔ 返程",
+                    mainCity: "岡山",
+                    spots: [
+                        { time: "10:00", name: "吉備津神社", type: "sight", note: "桃太郎傳說原型" },
+                        { time: "13:00", name: "最後採買", type: "shop", note: "AEON MALL 或 岡山車站" },
+                        { time: "15:30", name: "前往岡山機場", type: "transport", note: "還車，搭乘 IT263 返回" }
+                    ]
+                }
+            ],
+            accommodations: [
+                { name: "THE SHIROYAMA TERRACE 津山別邸", dates: "11/28-29", phone: "0868-24-2111", address: "岡山県津山市山下30-1" },
+                { name: "さぎの湯荘 (安來)", dates: "11/30", phone: "0854-28-6211", address: "島根県安来市古川町478-1" },
+                { name: "星野集團 界 玉造", dates: "12/01", phone: "050-3134-8092", address: "島根県松江市玉湯町玉造1237" },
+                { name: "Centurion Hotel Izumo", dates: "12/02-03", phone: "0853-21-8050", address: "島根県出雲市今市町2081" },
+                { name: "高梁國際飯店", dates: "12/04", phone: "0866-21-0080", address: "岡山県高梁市正宗町2033" },
+                { name: "滔々 Toutou (倉敷)", dates: "12/05", phone: "086-422-0005", address: "岡山県倉敷市中央1-4-16" },
+                { name: "三井花園飯店岡山", dates: "12/06", phone: "086-235-1131", address: "岡山市北区駅元町1-7" }
+            ],
+            emergency: [
+                { name: "緊急報警", number: "110" },
+                { name: "火警/救護車", number: "119" },
+                { name: "租車公司", number: "請查閱租車合約" },
+                { name: "外交部旅外救助", number: "+81-3-3280-7811" }
+            ],
+            budget: [
+                { item: "機票 (2人)", cost: 24000, paid: true },
+                { item: "住宿總計", cost: 180000, paid: false },
+                { item: "租車 (10天)", cost: 85000, paid: false },
+                { item: "預估餐費", cost: 100000, paid: false },
+                { item: "門票雜支", cost: 30000, paid: false }
+            ]
+        };
+
+        // --- Mock Weather API ---
+        const mockWeatherResponses = {
+            "津山": { weather: "cloudy", temp: "5°C / 14°C" },
+            "安來": { weather: "rain", temp: "4°C / 11°C" },
+            "玉造": { weather: "cloudy", temp: "6°C / 13°C" },
+            "松江": { weather: "sunny", temp: "7°C / 15°C" },
+            "出雲": { weather: "cloudy", temp: "5°C / 12°C" },
+            "高梁": { weather: "sunny", temp: "3°C / 11°C" },
+            "倉敷": { weather: "sunny", temp: "2°C / 12°C" },
+            "岡山": { weather: "sunny", temp: "8°C / 16°C" },
+        };
+
+        const fetchRealWeather = async (day) => {
+            await new Promise(resolve => setTimeout(resolve, Math.random() * 500 + 300));
+            const cityWeather = mockWeatherResponses[day.mainCity] || { weather: "unknown", temp: "N/A" };
+            return { id: day.id, ...cityWeather };
+        };
+
+        // --- Components ---
+
+        const WeatherBadge = ({ type, temp, simple = false }) => {
+            const iconClass = simple ? "w-4 h-4 mr-1" : "w-5 h-5 mr-1";
+            let icon;
+            let label = "載入中...";
+            
+            switch (type) {
+                case 'sunny':
+                    icon = <Icons.Sun className={`${iconClass} text-[#BC412B]`} />;
+                    label = "晴";
+                    break;
+                case 'cloudy':
+                    icon = <Icons.CloudSun className={`${iconClass} text-stone-500`} />;
+                    label = "曇";
+                    break;
+                case 'rain':
+                    icon = <Icons.CloudRain className={`${iconClass} text-[#2E4B71]`} />;
+                    label = "雨";
+                    break;
+                default:
+                    icon = <Icons.Info className={`${iconClass} text-[#D7C4BB]`} />;
+                    label = "不明";
+            }
+
+            return (
+                <div className={`flex items-center font-serif ${simple ? 'text-xs text-stone-500' : 'bg-[#f8f7f2] px-3 py-1 rounded-sm shadow-sm border border-[#e0d8cf] text-sm text-stone-700'}`}>
+                    {icon}
+                    <span>{simple ? temp : `${label} ${temp}`}</span>
+                </div>
+            );
+        };
+
+        const Tag = ({ text }) => {
+            let colorClass = "bg-[#ebe8e1] text-stone-600 border-[#dcd6cc]";
+            if (text.includes("必吃")) colorClass = "bg-[#fceceb] text-[#BC412B] border-[#e8d2cf]";
+            if (text.includes("必買")) colorClass = "bg-[#f5eef5] text-[#8e448e] border-[#e2d5e2]";
+            if (text.includes("重要") || text.includes("國寶")) colorClass = "bg-[#BC412B] text-white border-[#BC412B]";
+            if (text.includes("攻略") || text.includes("點擊") || text.includes("查看") || text.includes("冷知識") || text.includes("詳細") || text.includes("豆知識")) colorClass = "bg-[#eaf0f6] text-[#2E4B71] border-[#d4dde8]";
+
+            return (
+                <span className={`text-[11px] px-2 py-0.5 rounded-sm mr-2 mb-1 inline-block font-serif border ${colorClass}`}>
+                    {text}
+                </span>
+            );
+        };
+
+        const SpotCard = ({ spot, onClick }) => {
+            const hasSubSpots = (spot.subSpots && spot.subSpots.length > 0) || (spot.customDetails && spot.customDetails.length > 0);
+
+            const getIcon = (type) => {
+                switch (type) {
+                    case 'food': return <Icons.Utensils className="w-4 h-4 text-[#BC412B]" />;
+                    case 'coffee': return <Icons.Coffee className="w-4 h-4 text-[#8F5A3C]" />;
+                    case 'hotel': return <Icons.BedDouble className="w-4 h-4 text-[#2E4B71]" />;
+                    case 'transport': return <Icons.Car className="w-4 h-4 text-[#5F7146]" />;
+                    case 'shop': return <Icons.Wallet className="w-4 h-4 text-[#8e448e]" />;
+                    default: return <Icons.Camera className="w-4 h-4 text-[#5F7146]" />;
+                }
+            };
+
+            const handleNavClick = (e) => {
+                e.stopPropagation();
+                const url = spot.link ? spot.link : `https://www.google.com/maps/search/?api=1&query=${spot.name}`;
+                window.open(url, '_blank');
+            };
+
+            return (
+                <div 
+                    className={`ml-4 mb-8 relative pl-6 border-l border-[#e0d8cf] last:mb-0 last:border-l-0 font-serif 
+                        ${hasSubSpots ? 'cursor-pointer group' : ''}`}
+                    onClick={hasSubSpots ? onClick : undefined}
+                >
+                    <div className={`absolute -left-[9px] top-0 bg-[#fcfaf2] border rounded-full p-1.5 transition-colors shadow-sm 
+                        ${hasSubSpots ? 'border-[#2E4B71] group-hover:bg-[#eaf0f6]' : 'border-[#dcd6cc]'}`}>
+                        {getIcon(spot.type)}
+                    </div>
+
+                    <div className="flex justify-between items-start mb-2">
+                        <div>
+                            <span className="text-xs font-bold text-[#2E4B71] block mb-1 tracking-wider">{spot.time}</span>
+                            <div className="flex items-center">
+                                <h3 className="text-lg font-bold text-[#2b2b2b] leading-tight mr-2 tracking-wide">{spot.name}</h3>
+                                {hasSubSpots && <Icons.ChevronRight className="w-4 h-4 text-[#2E4B71] opacity-60" />}
+                            </div>
+                        </div>
+                        {!spot.hideNav && (
+                            <button 
+                                onClick={handleNavClick}
+                                className="bg-[#f8f7f2] border border-[#e0d8cf] text-[#2E4B71] p-2 rounded-full active:scale-95 transition-transform shadow-sm"
+                                aria-label="導航"
+                            >
+                                <Icons.Navigation className="w-3.5 h-3.5" />
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="flex flex-wrap mb-2">
+                        {spot.tags && spot.tags.map(tag => <Tag key={tag} text={tag} />)}
+                    </div>
+
+                    {spot.note && (
+                        <p className="text-sm text-[#595959] mb-3 leading-loose">{spot.note}</p>
+                    )}
+
+                    {spot.stories && (
+                        <div className="mt-4 bg-[#fdfdfb] p-4 rounded-sm border-t-2 border-b-2 border-[#e6e2d8] relative">
+                            <div className="absolute top-0 right-0 p-2 opacity-5">
+                                <Icons.Flower2 className="w-16 h-16" />
+                            </div>
+                            <h4 className="text-xs font-bold text-[#8F5A3C] mb-2 flex items-center tracking-widest border-b border-[#e6e2d8] pb-1 w-fit">
+                                旅人手札
+                            </h4>
+                            {spot.stories.map((story, idx) => (
+                                <p key={idx} className="text-xs text-[#6e6e6e] leading-7 tracking-wide text-justify">
+                                    {story}
+                                </p>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const DayOverviewCard = ({ day, onClick, weatherInfo }) => {
+            const { weather, temp } = weatherInfo || { weather: 'loading', temp: '...' };
+
+            return (
+                <button 
+                    onClick={onClick}
+                    className="bg-white p-4 rounded-lg shadow-sm border border-[#e0d8cf] flex flex-col items-start w-full text-left transition-all active:scale-95 hover:shadow-md hover:border-[#2E4B71] relative overflow-hidden group font-serif"
+                >
+                    <div className="absolute top-0 right-0 w-12 h-12 bg-[#eaf0f6] rounded-bl-[30px] -mr-6 -mt-6 transition-transform group-hover:scale-110"></div>
+                    
+                    <div className="flex items-center justify-between w-full mb-3 z-10">
+                        <div className="bg-[#2E4B71] text-[#fcfaf2] w-8 h-8 rounded-md flex items-center justify-center text-sm font-medium shadow-sm">
+                            {day.id}
+                        </div>
+                        <WeatherBadge type={weather} temp={temp} simple={true} />
+                    </div>
+                    
+                    <div className="z-10 w-full">
+                        <h3 className="font-bold text-[#2b2b2b] text-base mb-1 tracking-wider">{day.date}</h3>
+                        <p className="text-xs text-[#6e6e6e] border-t border-[#e0d8cf] pt-2 mt-1 w-full flex items-center">
+                            <Icons.MapPin className="w-3 h-3 mr-1" />{day.location}
+                        </p>
+                    </div>
+                </button>
+            );
+        };
+
+        const DetailHeader = ({ title, subtitle, onBack }) => (
+            <div className="sticky top-0 z-40 bg-[#fcfaf2]/95 backdrop-blur-md border-b border-[#e0d8cf] px-4 py-4 mb-6 flex items-center justify-between shadow-sm">
+                <button 
+                    onClick={onBack}
+                    className="flex items-center text-[#2E4B71] text-sm font-medium p-1 pr-3 rounded hover:bg-[#eaf0f6] transition-colors"
+                >
+                    <Icons.ChevronLeft className="w-5 h-5 mr-1" />
+                    <span className="font-serif">戻る</span>
+                </button>
+                <div className="text-center">
+                    {subtitle && <div className="text-[10px] text-[#8e8e8e] font-bold uppercase tracking-widest mb-0.5">{subtitle}</div>}
+                    <div className="text-sm font-bold text-[#2b2b2b] font-serif tracking-wide">{title}</div>
+                </div>
+                <div className="w-16"></div> 
+            </div>
+        );
+
+        const SpotDetailView = ({ spot, onBack }) => {
+            useEffect(() => { window.scrollTo(0, 0); }, []);
+
+            return (
+                <div className="pb-24 min-h-screen bg-[#fcfaf2]">
+                    <DetailHeader title={spot.name} onBack={onBack} />
+
+                    {spot.customDetails && (
+                        <div className="px-4">
+                            <div className="bg-white rounded-lg shadow-sm border border-[#e0d8cf] p-5 mb-4 relative overflow-hidden">
+                                <div className="absolute top-0 left-0 w-full h-1 bg-[#2E4B71]"></div>
+                                <div className="flex items-center mb-5 text-[#2E4B71] font-bold border-b border-[#e0d8cf] pb-3 font-serif">
+                                    <Icons.FileText className="w-5 h-5 mr-2" />
+                                    詳細
+                                </div>
+                                
+                                <div className="space-y-5 font-serif">
+                                    {spot.customDetails.map((item, idx) => (
+                                        <div key={idx} className="flex flex-col border-b border-dashed border-[#e0d8cf] pb-4 last:border-b-0 last:pb-0">
+                                            <div className="flex items-center text-xs text-[#8e8e8e] font-bold uppercase tracking-wider mb-2">
+                                                {item.icon && <span className="mr-1.5">{item.icon}</span>}
+                                                {item.label}
+                                            </div>
+                                            <div className={`text-sm text-[#4a4a4a] whitespace-pre-wrap leading-relaxed ${item.highlight ? 'font-bold text-[#BC412B] text-lg' : ''}`}>
+                                                {item.value}
+                                            </div>
+                                            
+                                            {item.isAddress && (
+                                                <button 
+                                                    onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.value.split('\n')[2] || item.value)}`, '_blank')}
+                                                    className="mt-3 text-xs bg-[#eaf0f6] text-[#2E4B71] py-1.5 px-3 rounded-sm self-start flex items-center border border-[#d4dde8]"
+                                                >
+                                                    <Icons.Navigation className="w-3 h-3 mr-1" /> ナビ開始
+                                                </button>
+                                            )}
+
+                                            {item.linkUrl && (
+                                                <button 
+                                                    onClick={() => window.open(item.linkUrl, '_blank')}
+                                                    className="mt-3 text-xs text-[#2E4B71] hover:text-[#BC412B] flex items-center underline underline-offset-4"
+                                                >
+                                                    <Icons.ExternalLink className="w-3 h-3 mr-1" /> 連結へ移動
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {spot.subSpots && (
+                        <div className="px-4">
+                            <div className="bg-white rounded-lg shadow-sm border border-[#e0d8cf] p-5 mb-4 relative overflow-hidden">
+                                <div className="absolute top-0 left-0 w-full h-1 bg-[#BC412B]"></div>
+                                <div className="flex items-center mb-5 text-[#BC412B] font-bold border-b border-[#e0d8cf] pb-3 font-serif">
+                                    <Icons.Utensils className="w-5 h-5 mr-2" />
+                                    推薦清單
+                                </div>
+                                
+                                <div className="space-y-4">
+                                    {spot.subSpots.map((sub, idx) => (
+                                        <div key={idx} className="flex items-start justify-between bg-[#fcfaf2] p-4 rounded-sm border border-[#e0d8cf]">
+                                            <div className="flex items-start">
+                                                <div className="bg-white text-[#2E4B71] w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border border-[#e0d8cf] mr-3 shadow-sm mt-0.5 font-serif">
+                                                    {idx + 1}
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-[#2b2b2b] font-serif">{sub.name}</h4>
+                                                    <p className="text-xs text-[#6e6e6e] mt-1 font-serif">{sub.note}</p>
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={() => window.open(sub.link, '_blank')}
+                                                className="bg-[#2E4B71] text-white p-2 rounded-full shadow-md active:scale-95 transition-transform"
+                                                aria-label="導航"
+                                            >
+                                                <Icons.Navigation className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const DayDetailView = ({ day, onBack, weatherInfo }) => {
+            const [selectedSpot, setSelectedSpot] = useState(null);
+
+            useEffect(() => { window.scrollTo(0, 0); }, [day]);
+            
+            if (selectedSpot) {
+                return <SpotDetailView spot={selectedSpot} onBack={() => setSelectedSpot(null)} />;
+            }
+            
+            const { weather, temp } = weatherInfo || { weather: 'loading', temp: '...' };
+
+            return (
+                <div className="min-h-screen bg-[#fcfaf2]">
+                    <DetailHeader title={day.date} subtitle={`DAY ${day.id}`} onBack={onBack} />
+
+                    <div className="px-4 pb-24">
+                        <div className="bg-white rounded-lg shadow-sm border border-[#e0d8cf] p-5 mb-6 relative">
+                            <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#e0d8cf]">
+                                <div className="flex items-center text-[#2b2b2b] font-bold font-serif text-lg">
+                                    <Icons.MapPin className="w-5 h-5 mr-2 text-[#2E4B71]" />
+                                    {day.location}
+                                </div>
+                                <WeatherBadge type={weather} temp={temp} /> 
+                            </div>
+                            
+                            <div className="pt-2">
+                                {day.spots.map((spot, index) => (
+                                    <SpotCard 
+                                        key={index} 
+                                        spot={spot} 
+                                        onClick={() => setSelectedSpot(spot)} 
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const ToolsSection = () => {
+            return (
+                <div className="pb-24 px-4 pt-6 font-serif">
+                    <div className="grid grid-cols-2 gap-4 mb-8">
+                        <div className="bg-white p-4 rounded-lg shadow-sm border border-[#e0d8cf] flex flex-col items-center justify-center text-center relative overflow-hidden">
+                            <div className="absolute top-0 w-full h-1 bg-[#2E4B71] opacity-50"></div>
+                            <div className="text-sm font-bold text-[#2E4B71] mb-1">去程 IT262</div>
+                            <div className="text-xs text-[#6e6e6e]">11/28 11:30</div>
+                        </div>
+                        <div className="bg-white p-4 rounded-lg shadow-sm border border-[#e0d8cf] flex flex-col items-center justify-center text-center relative overflow-hidden">
+                            <div className="absolute top-0 w-full h-1 bg-[#BC412B] opacity-50"></div>
+                            <div className="text-sm font-bold text-[#BC412B] mb-1">回程 IT263</div>
+                            <div className="text-xs text-[#6e6e6e]">12/08 15:55</div>
+                        </div>
+                    </div>
+
+                    <h3 className="text-lg font-bold text-[#2E4B71] mb-4 flex items-center border-l-4 border-[#2E4B71] pl-3">
+                        宿泊リスト
+                    </h3>
+                    <div className="space-y-3 mb-10">
+                        {tripData.accommodations.map((hotel, idx) => (
+                            <div key={idx} className="bg-white p-4 rounded-md border border-[#e0d8cf] shadow-sm flex justify-between items-center">
+                                <div>
+                                    <h4 className="font-bold text-[#2b2b2b] text-sm tracking-wide">{hotel.name}</h4>
+                                    <p className="text-xs text-[#8e8e8e] mt-1">{hotel.dates}・{hotel.address}</p>
+                                </div>
+                                <button onClick={() => window.open(`tel:${hotel.phone}`)} className="bg-[#fcfaf2] border border-[#e0d8cf] text-[#5F7146] p-2 rounded-full">
+                                    <Icons.Phone className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+
+                    <h3 className="text-lg font-bold text-[#2E4B71] mb-4 flex items-center border-l-4 border-[#2E4B71] pl-3">
+                        予算管理
+                    </h3>
+                    <div className="bg-white rounded-lg shadow-sm border border-[#e0d8cf] overflow-hidden mb-8">
+                        {tripData.budget.map((item, idx) => (
+                            <div key={idx} className="flex justify-between items-center p-4 border-b border-[#f0ece6] last:border-b-0">
+                                <span className="text-sm text-[#4a4a4a]">{item.item}</span>
+                                <div className="flex items-center">
+                                    <span className="font-mono font-bold text-[#2b2b2b] mr-3">¥{item.cost.toLocaleString()}</span>
+                                    {item.paid ? (
+                                        <span className="text-[10px] bg-[#eafcf2] text-[#2c7a52] px-2 py-0.5 rounded-full border border-[#d0eadd]">済</span>
+                                    ) : (
+                                        <span className="text-[10px] bg-[#f5f5f5] text-[#8e8e8e] px-2 py-0.5 rounded-full border border-[#e0e0e0]">未</span>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                        <div className="p-4 bg-[#f8f7f2] flex justify-between items-center border-t border-[#e0d8cf]">
+                            <span className="font-bold text-sm text-[#2b2b2b]">合計</span>
+                            <span className="font-bold text-[#BC412B] font-mono text-lg">
+                                ¥{tripData.budget.reduce((acc, cur) => acc + cur.cost, 0).toLocaleString()}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="bg-[#fceceb] border border-[#e8d2cf] rounded-lg p-5">
+                        <h3 className="text-[#BC412B] font-bold text-sm mb-3 flex items-center">
+                            <Icons.Info className="w-4 h-4 mr-2" /> 緊急連絡先
+                        </h3>
+                        <div className="grid grid-cols-2 gap-3">
+                            {tripData.emergency.map((item, idx) => (
+                                <a key={idx} href={`tel:${item.number}`} className="bg-white/80 p-3 rounded border border-[#e8d2cf] text-center block active:bg-white transition-colors">
+                                    <div className="text-xs text-[#8e8e8e] mb-1">{item.name}</div>
+                                    <div className="text-base font-bold text-[#BC412B] font-mono">{item.number}</div>
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const ItineraryView = ({ weatherData }) => {
+            const [selectedDay, setSelectedDay] = useState(null);
+
+            if (selectedDay) {
+                return <DayDetailView day={selectedDay} onBack={() => setSelectedDay(null)} weatherInfo={weatherData[selectedDay.id]} />;
+            }
+
+            return (
+                <div className="pb-24 px-4 pt-6 font-serif">
+                    <div className="grid grid-cols-2 gap-4">
+                        {tripData.days.map((day) => (
+                            <DayOverviewCard 
+                                key={day.id} 
+                                day={day} 
+                                onClick={() => setSelectedDay(day)}
+                                weatherInfo={weatherData[day.id]}
+                            />
+                        ))}
+                    </div>
+                    <div className="text-center text-xs text-[#a0a0a0] mt-8 mb-4 tracking-widest">
+                        —— 日程を選択 ——
+                    </div>
+                </div>
+            );
+        };
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('itinerary');
+            const [scrolled, setScrolled] = useState(false);
+            const [weatherData, setWeatherData] = useState({});
+
+            useEffect(() => {
+                const handleScroll = () => { setScrolled(window.scrollY > 20); };
+                window.addEventListener('scroll', handleScroll);
+                return () => window.removeEventListener('scroll', handleScroll);
+            }, []);
+
+            useEffect(() => {
+                const loadWeather = async () => {
+                    const results = await Promise.all(tripData.days.map(day => fetchRealWeather(day)));
+                    setWeatherData(results.reduce((acc, curr) => { acc[curr.id] = { weather: curr.weather, temp: curr.temp }; return acc; }, {}));
+                };
+                loadWeather();
+            }, []);
+
+            return (
+                <div className="min-h-screen bg-[#fcfaf2] font-sans text-[#2b2b2b]">
+                    {/* Header */}
+                    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? 'bg-[#fcfaf2]/95 shadow-sm py-3 border-b border-[#e0d8cf]' : 'bg-transparent py-6'}`}>
+                        <div className="max-w-md mx-auto px-5 flex justify-between items-end">
+                            <div>
+                                <h1 className={`font-bold text-[#2E4B71] transition-all font-serif tracking-widest ${scrolled ? 'text-lg' : 'text-2xl'}`}>
+                                    {tripData.meta.title}
+                                </h1>
+                                {!scrolled && (
+                                    <p className="text-xs text-[#8e8e8e] mt-2 flex items-center tracking-wider">
+                                        <Icons.Calendar className="w-3 h-3 mr-1" /> {tripData.meta.dateRange}
+                                    </p>
+                                )}
+                            </div>
+                            <div className="text-right">
+                                {!scrolled && <span className="text-[10px] bg-[#fceceb] text-[#BC412B] px-3 py-1 rounded-full border border-[#e8d2cf] tracking-widest">秋旅</span>}
+                            </div>
+                        </div>
+                    </header>
+                    
+                    <div className="h-24"></div>
+
+                    <main className="max-w-md mx-auto relative z-0">
+                        {activeTab === 'itinerary' ? <ItineraryView weatherData={weatherData} /> : <ToolsSection />}
+                    </main>
+
+                    {/* Bottom Navigation */}
+                    <nav className="fixed bottom-0 left-0 right-0 bg-[#fcfaf2] border-t border-[#e0d8cf] z-50 pb-safe shadow-[0_-5px_20px_rgba(0,0,0,0.03)]">
+                        <div className="max-w-md mx-auto flex justify-around items-center h-16">
+                            <button 
+                                onClick={() => setActiveTab('itinerary')}
+                                className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${activeTab === 'itinerary' ? 'text-[#2E4B71]' : 'text-[#a0a0a0]'}`}
+                            >
+                                <Icons.MapPin className="w-5 h-5" />
+                                <span className="text-[10px] font-medium tracking-widest font-serif">日程</span>
+                            </button>
+                            
+                            <div className="w-px h-6 bg-[#e0d8cf]"></div>
+
+                            <button 
+                                onClick={() => setActiveTab('tools')}
+                                className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${activeTab === 'tools' ? 'text-[#2E4B71]' : 'text-[#a0a0a0]'}`}
+                            >
+                                <Icons.BookOpen className="w-5 h-5" />
+                                <span className="text-[10px] font-medium tracking-widest font-serif">手帳</span>
+                            </button>
+                        </div>
+                    </nav>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
